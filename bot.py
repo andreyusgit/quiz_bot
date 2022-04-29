@@ -24,6 +24,7 @@ dp.middleware.setup(LoggingMiddleware())
 ws = openpyxl.load_workbook('ques1.xlsx')
 sh1 = ws['Sheet1']
 sh2 = ws['Sheet2']
+sh3 = ws['Sheet3']
 
 users = {}
 score = {}
@@ -64,11 +65,19 @@ async def process_thx_command(message: types.Message):
 
 @dp.message_handler(state=TestStates.TEST_STATE_2 | TestStates.TEST_STATE_0, commands=['quiz'])
 async def process_quiz_command(message: types.Message):
+    w = openpyxl.load_workbook('users.xlsx')
+    s = w['users']
+    s = w.active
     if len(qs) == 0:
         await message.answer('Викторина начинается!\n\n'
+                             '1 раунд - угадай фильм/сериал по кадру'
                              'Вводи ответы развернуто и называй фильмы/сериалы '
                              'их полным названием с указанием части\n\nУспехов !')
-    if qs[int(message.from_user.id)] > 20:
+    if str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(2) and qs[int(message.from_user.id)] > 10:
+        await message.answer('Викторина продолжается!\n\n'
+                             '2 раунд - угадай фильм/сериал по саундреку')
+        await message.answer('Введите ответ на 1 вопрос')
+    elif qs[int(message.from_user.id)] > 20:
         await message.answer('Введите ответ на 1 вопрос')
     else:
         await message.answer('Введите ответ на ' + str(qs[int(message.from_user.id)]) +
@@ -82,12 +91,20 @@ async def process_ans_command(message: types.Message):
     w = openpyxl.load_workbook('users.xlsx')
     s = w['users']
     s = w.active
-    sh = sh2
+
     if str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1) and qs[int(message.from_user.id)] <= 20:
         sh = sh1
-    elif str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1) and qs[int(message.from_user.id)] > 20:
+    elif (str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1) and qs[int(message.from_user.id)] > 20) or (str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(2) and qs[int(message.from_user.id)] <= 10):
+        sh = sh2
         cell = s.cell(row=users[int(message.from_user.id)] + 2, column=5)
         cell.value = 2
+        w.save('users.xlsx')
+        w.close()
+        qs[int(message.from_user.id)] = 1
+    else:
+        sh = sh3
+        cell = s.cell(row=users[int(message.from_user.id)] + 2, column=5)
+        cell.value = 3
         w.save('users.xlsx')
         w.close()
         qs[int(message.from_user.id)] = 1
@@ -96,7 +113,7 @@ async def process_ans_command(message: types.Message):
             message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=2).value)) or (
             message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=3).value)) or (
             message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=4).value)):
-        if (qs[int(message.from_user.id)] <= 10 and str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1)) or (qs[int(message.from_user.id)] <= 5 and str(s.cell(row=qs[int(message.from_user.id)], column=5).value) == str(2)):
+        if (qs[int(message.from_user.id)] <= 10 and str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1)) or (qs[int(message.from_user.id)] <= 5 and (str(s.cell(row=qs[int(message.from_user.id)], column=5).value) == str(2) or (str(s.cell(row=qs[int(message.from_user.id)], column=5).value) == str(3)))):
             score[int(message.from_user.id)] = int(score[int(message.from_user.id)]) + 1
         else:
             score[int(message.from_user.id)] = int(score[int(message.from_user.id)]) + 2
@@ -107,7 +124,7 @@ async def process_ans_command(message: types.Message):
         else:
             await state.set_state(TestStates.all()[int(3)])
         await message.answer('Первый раунд викторины закончен!\n\n'
-                             'Второй раунд будет после второго фильма, а пока настало время'
+                             'Второй раунд будет после второго фильма, а пока настало время '
                              'отдыха\n\n!Начать второй раунд можно только по команде от ведущих!'
                              '\n\nЧтобы начать, просто нажми —> /quiz')
         qs[int(message.from_user.id)] += 1
@@ -119,6 +136,22 @@ async def process_ans_command(message: types.Message):
         wb.save('users.xlsx')
         wb.close()
     elif qs[int(message.from_user.id)] == 10 and str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(2):
+        await message.answer('Переходим к заключительному этапу\n\n'
+                             '3 раунд - угадай фильм по цитате')
+        qs[int(message.from_user.id)] += 1
+        if int(message.from_user.id) == int(765839138):
+            await state.set_state(TestStates.all()[int(0)])
+        else:
+            await state.set_state(TestStates.all()[int(5)])
+        wb = openpyxl.load_workbook('users.xlsx')
+        sheet = wb['users']
+        sheet = wb.active
+        cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
+        cell.value = score[int(message.from_user.id)]
+        wb.save('users.xlsx')
+        wb.close()
+        await process_quiz_command(message)
+    elif qs[int(message.from_user.id)] == 10 and str(s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(3):
         await message.answer('Викторина окончена, большое спасибо за участие\n\n'
                              'Результаты будут объявлены чуть позже'
                              '\n\nУзнать свой счет —> /score')
