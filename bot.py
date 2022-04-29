@@ -31,6 +31,16 @@ score = {}
 qs = {}
 
 
+def save_s(message):
+    wb = openpyxl.load_workbook('users.xlsx')
+    sheet = wb['users']
+    sheet = wb.active
+    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
+    cell.value = score[int(message.from_user.id)]
+    wb.save('users.xlsx')
+    wb.close()
+
+
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     state = dp.current_state(user=message.from_user.id)
@@ -70,7 +80,8 @@ async def process_quiz_command(message: types.Message):
     s = w.active
     if qs[int(message.from_user.id)] == 1:
         await message.answer(MESSAGES['first_s'])
-    if str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(1) and qs[message.from_user.id] > 20:
+    if str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(1) and int(
+            qs[message.from_user.id]) > 20:
         await message.answer(MESSAGES['second_s'])
         await message.answer('Введите ответ на 1 вопрос')
     elif qs[message.from_user.id] > 20 or \
@@ -128,30 +139,21 @@ async def process_ans_command(message: types.Message):
         if int(message.from_user.id) == int(765839138):
             await state.set_state(TestStates.all()[int(0)])
         else:
-            await state.set_state(TestStates.all()[int(3)])
+            await state.set_state(TestStates.all()[int(2)])
         await message.answer(MESSAGES['first_e'])
         qs[int(message.from_user.id)] += 1
-        wb = openpyxl.load_workbook('users.xlsx')
-        sheet = wb['users']
-        sheet = wb.active
-        cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
-        cell.value = score[int(message.from_user.id)]
-        wb.save('users.xlsx')
-        wb.close()
+        save_s(message)
 
     elif qs[int(message.from_user.id)] == 10 and str(
             s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(2):
         await message.answer(MESSAGES['second_m'])
-        wb = openpyxl.load_workbook('users.xlsx')
-        sheet = wb['users']
-        sheet = wb.active
-        cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
-        cell.value = score[int(message.from_user.id)]
-        wb.save('users.xlsx')
-        wb.close()
+        save_s(message)
 
         qs[int(message.from_user.id)] += 1
-        await state.set_state(TestStates.all()[int(2)])
+        if int(message.from_user.id) == int(765839138):
+            await state.set_state(TestStates.all()[int(0)])
+        else:
+            await state.set_state(TestStates.all()[int(2)])
         await process_quiz_command(message)
     elif qs[int(message.from_user.id)] == 10 and str(
             s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(3):
@@ -160,14 +162,9 @@ async def process_ans_command(message: types.Message):
             await state.set_state(TestStates.all()[int(0)])
         else:
             await state.set_state(TestStates.all()[int(5)])
-        wb = openpyxl.load_workbook('users.xlsx')
-        sheet = wb['users']
-        sheet = wb.active
-        cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
-        cell.value = score[int(message.from_user.id)]
-        wb.save('users.xlsx')
-        wb.close()
+        save_s(message)
     else:
+        save_s(message)
         qs[int(message.from_user.id)] += 1
         await state.set_state(TestStates.all()[int(2)])
         await process_quiz_command(message)
@@ -207,10 +204,16 @@ async def process_link_command(message: types.Message):
                          '\n\nНажми —> /info <— чтобы узнать, что делать дальше')
 
 
-@dp.message_handler(state=TestStates.TEST_STATE_0, commands=['score'])
+@dp.message_handler(state=TestStates.TEST_STATE_0 | TestStates.TEST_STATE_5, commands=['score'])
 async def process_score_command(message: types.Message):
     await message.answer('Твой счет: ' + str(score[int(message.from_user.id)]) + ' баллов из 60'
-                         '\nЛидеры будут объявлены позже')
+                                                                                 '\nЛидеры будут объявлены позже')
+
+
+@dp.message_handler(state=TestStates.TEST_STATE_0, commands=['res'])
+async def process_score_command(message: types.Message):
+    f = open("users.xlsx", "rb")
+    await message.answer_document(f)
 
 
 @dp.message_handler(state=TestStates.all())
