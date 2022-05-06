@@ -27,16 +27,14 @@ sh2 = ws['Sheet2']
 sh3 = ws['Sheet3']
 
 users = {}
-score = {}
-qs = {}
 
 
 def save_s(message):
     wb = openpyxl.load_workbook('users.xlsx')
     sheet = wb['users']
     sheet = wb.active
-    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
-    cell.value = score[int(message.from_user.id)]
+    cell = sheet.cell(row=users[message.from_user.id][0] + 2, column=3)
+    cell.value = users[message.from_user.id][1]
     wb.save('users.xlsx')
     wb.close()
 
@@ -45,22 +43,20 @@ def save_s(message):
 async def process_start_command(message: types.Message):
     state = dp.current_state(user=message.from_user.id)
     await message.answer(MESSAGES['start'])
-    users[int(message.from_user.id)] = len(users)
-    score[int(message.from_user.id)] = 0
-    qs[int(message.from_user.id)] = 1
+    users[message.from_user.id] = len(users), 0, 1  # us, score, qs
 
     wb = openpyxl.load_workbook('users.xlsx')
     sheet = wb['users']
     sheet = wb.active
-    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=1)
+    cell = sheet.cell(row=users[message.from_user.id][0] + 2, column=1)
     cell.value = message.from_user.id
-    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=3)
+    cell = sheet.cell(row=users[message.from_user.id][0] + 2, column=3)
     cell.value = 0
-    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=5)
+    cell = sheet.cell(row=users[message.from_user.id][0] + 2, column=5)
     cell.value = 1
     wb.save('users.xlsx')
     wb.close()
-    await state.set_state(TestStates.all()[int(6)])
+    await state.set_state(TestStates.all()[6])
 
 
 @dp.message_handler(state='*', commands=['info'])
@@ -78,21 +74,21 @@ async def process_quiz_command(message: types.Message):
     w = openpyxl.load_workbook('users.xlsx')
     s = w['users']
     s = w.active
-    if qs[int(message.from_user.id)] == 1:
+    if users[message.from_user.id][2] == 1:
         await message.answer(MESSAGES['first_s'])
-    if str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(1) and int(
-            qs[message.from_user.id]) > 20:
+    if str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1) and users[message.from_user.id][2]\
+            > 20:
         await message.answer(MESSAGES['second_s'])
         await message.answer('Введите ответ на 1 вопрос')
-    elif qs[message.from_user.id] > 20 or \
-            (str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(2) and
-             qs[message.from_user.id] > 10):
+    elif users[message.from_user.id][2] > 20 or \
+            (str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(2) and
+             users[message.from_user.id][2] > 10):
         await message.answer('Введите ответ на 1 вопрос')
     else:
-        await message.answer('Введите ответ на ' + str(qs[int(message.from_user.id)]) +
+        await message.answer('Введите ответ на ' + str(users[message.from_user.id][2]) +
                              ' вопрос')
     state = dp.current_state(user=message.from_user.id)
-    await state.set_state(TestStates.all()[int(3)])
+    await state.set_state(TestStates.all()[3])
 
 
 @dp.message_handler(state=TestStates.TEST_STATE_3)
@@ -101,72 +97,73 @@ async def process_ans_command(message: types.Message):
     s = w['users']
     s = w.active
 
-    if str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(1) and qs[message.from_user.id] <= 20:
+    if str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1) and users[message.from_user.id][2] \
+            <= 20:
         sh = sh1
-    elif (str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(1) and
-          qs[message.from_user.id] > 20) \
-            or (str(s.cell(row=users[message.from_user.id] + 2, column=5).value) == str(2) and
-                qs[message.from_user.id] <= 10):
+    elif (str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1) and
+          users[message.from_user.id][2] > 20) \
+            or (str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(2) and
+                users[message.from_user.id][2] <= 10):
         sh = sh2
-        cell = s.cell(row=users[message.from_user.id] + 2, column=5)
+        cell = s.cell(row=users[message.from_user.id][0] + 2, column=5)
         cell.value = 2
         w.save('users.xlsx')
         w.close()
-        if qs[int(message.from_user.id)] > 10:
-            qs[int(message.from_user.id)] = 1
+        if users[message.from_user.id][2] > 10:
+            users[message.from_user.id][2] = 1
     else:
         sh = sh3
-        cell = s.cell(row=users[int(message.from_user.id)] + 2, column=5)
+        cell = s.cell(row=users[message.from_user.id][0] + 2, column=5)
         cell.value = 3
         w.save('users.xlsx')
         w.close()
-        if qs[int(message.from_user.id)] > 10:
-            qs[int(message.from_user.id)] = 1
+        if users[message.from_user.id][2] > 10:
+            users[message.from_user.id][2] = 1
 
-    if (message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=1).value)) or (
-            message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=2).value)) or (
-            message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=3).value)) or (
-            message.text == str(sh.cell(row=qs[int(message.from_user.id)], column=4).value)):
-        if ((qs[int(message.from_user.id)] <= 10 and str(
-                s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1)) or (
-                qs[int(message.from_user.id)] <= 5)):
-            score[int(message.from_user.id)] = int(score[int(message.from_user.id)]) + 1
+    if (message.text == str(sh.cell(row=users[message.from_user.id][2], column=1).value)) or (
+            message.text == str(sh.cell(row=users[message.from_user.id][2], column=2).value)) or (
+            message.text == str(sh.cell(row=users[message.from_user.id][2], column=3).value)) or (
+            message.text == str(sh.cell(row=users[message.from_user.id][2], column=4).value)):
+        if ((users[message.from_user.id][2] <= 10 and str(
+                s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1)) or (
+                users[message.from_user.id][2] <= 5)):
+            users[message.from_user.id][1] = users[message.from_user.id][1] + 1
         else:
-            score[int(message.from_user.id)] = int(score[int(message.from_user.id)]) + 2
+            users[message.from_user.id][1] = users[message.from_user.id][1] + 2
     state = dp.current_state(user=message.from_user.id)
-    if qs[int(message.from_user.id)] == 20 and str(
-            s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(1):
-        if int(message.from_user.id) == int(765839138):
-            await state.set_state(TestStates.all()[int(0)])
+    if users[message.from_user.id][2] == 20 and str(
+            s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1):
+        if message.from_user.id == 765839138:
+            await state.set_state(TestStates.all()[0])
         else:
-            await state.set_state(TestStates.all()[int(2)])
+            await state.set_state(TestStates.all()[2])
         await message.answer(MESSAGES['first_e'])
-        qs[int(message.from_user.id)] += 1
+        users[message.from_user.id][2] += 1
         save_s(message)
 
-    elif qs[int(message.from_user.id)] == 10 and str(
-            s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(2):
+    elif users[message.from_user.id][2] == 10 and str(
+            s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(2):
         await message.answer(MESSAGES['second_m'])
         save_s(message)
 
-        qs[int(message.from_user.id)] += 1
-        if int(message.from_user.id) == int(765839138):
-            await state.set_state(TestStates.all()[int(0)])
+        users[message.from_user.id][2] += 1
+        if message.from_user.id == 765839138:
+            await state.set_state(TestStates.all()[0])
         else:
-            await state.set_state(TestStates.all()[int(2)])
+            await state.set_state(TestStates.all()[2])
         await process_quiz_command(message)
-    elif qs[int(message.from_user.id)] == 10 and str(
-            s.cell(row=users[int(message.from_user.id)] + 2, column=5).value) == str(3):
+    elif users[message.from_user.id][2] == 10 and str(
+            s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(3):
         await message.answer(MESSAGES['second_e'])
-        if int(message.from_user.id) == int(765839138):
-            await state.set_state(TestStates.all()[int(0)])
+        if message.from_user.id == 765839138:
+            await state.set_state(TestStates.all()[0])
         else:
-            await state.set_state(TestStates.all()[int(5)])
+            await state.set_state(TestStates.all()[5])
         save_s(message)
     else:
         save_s(message)
-        qs[int(message.from_user.id)] += 1
-        await state.set_state(TestStates.all()[int(2)])
+        users[message.from_user.id][2] = users[message.from_user.id][2] + 1
+        await state.set_state(TestStates.all()[2])
         await process_quiz_command(message)
 
 
@@ -175,13 +172,13 @@ async def process_fio_command(message: types.Message):
     wb = openpyxl.load_workbook('users.xlsx')
     sheet = wb['users']
     sheet = wb.active
-    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=2)
+    cell = sheet.cell(row=users[message.from_user.id][0] + 2, column=2)
     cell.value = message.text
     wb.save('users.xlsx')
     wb.close()
 
     state = dp.current_state(user=message.from_user.id)
-    await state.set_state(TestStates.all()[int(7)])
+    await state.set_state(TestStates.all()[7])
     await message.answer('Прикрепи, пожалуйста, ссылку на ВК, чтобы мы могли связаться с тобой :)')
 
 
@@ -190,24 +187,24 @@ async def process_link_command(message: types.Message):
     wb = openpyxl.load_workbook('users.xlsx')
     sheet = wb['users']
     sheet = wb.active
-    cell = sheet.cell(row=users[int(message.from_user.id)] + 2, column=4)
+    cell = sheet.cell(row=users[message.from_user.id][0] + 2, column=4)
     cell.value = message.text
     wb.save('users.xlsx')
     wb.close()
 
     state = dp.current_state(user=message.from_user.id)
-    if int(message.from_user.id) == int(765839138):
-        await state.set_state(TestStates.all()[int(0)])
+    if message.from_user.id == 765839138:
+        await state.set_state(TestStates.all()[0])
     else:
-        await state.set_state(TestStates.all()[int(2)])
+        await state.set_state(TestStates.all()[2])
     await message.answer('Регистрация успешно пройдена!'
                          '\n\nНажми —> /info <— чтобы узнать, что делать дальше')
 
 
 @dp.message_handler(state=TestStates.TEST_STATE_0 | TestStates.TEST_STATE_5, commands=['score'])
 async def process_score_command(message: types.Message):
-    await message.answer('Твой счет: ' + str(score[int(message.from_user.id)]) + ' баллов из 60'
-                                                                                 '\nЛидеры будут объявлены позже')
+    await message.answer('Твой счет: ' + str(users[message.from_user.id][1]) + ' баллов из 60'
+                                                                               '\nЛидеры будут объявлены позже')
 
 
 @dp.message_handler(state=TestStates.TEST_STATE_0, commands=['res'])
