@@ -30,7 +30,6 @@ sh3 = ws['Sheet3']
 users = {}
 
 
-
 def save_s(message):
     wb = openpyxl.load_workbook('users.xlsx')
     sheet = wb['users']
