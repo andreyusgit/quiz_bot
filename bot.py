@@ -76,7 +76,7 @@ async def process_quiz_command(message: types.Message):
     s = w.active
     if users[message.from_user.id][2] == 1:
         await message.answer(MESSAGES['first_s'])
-    if str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1) and users[message.from_user.id][2]\
+    if str(s.cell(row=users[message.from_user.id][0] + 2, column=5).value) == str(1) and users[message.from_user.id][2] \
             > 20:
         await message.answer(MESSAGES['second_s'])
         await message.answer('Введите ответ на 1 вопрос')
@@ -235,3 +235,5 @@ if __name__ == '__main__':
     keyboard.add(
         button_1)  # https://mastergroosha.github.io/telegram-tutorial-2/buttons/  понятное руководство по кнопкам
     executor.start_polling(dp, on_shutdown=shutdown)
+
+print('hello')
