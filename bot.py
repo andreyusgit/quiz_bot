@@ -236,4 +236,3 @@ if __name__ == '__main__':
         button_1)  # https://mastergroosha.github.io/telegram-tutorial-2/buttons/  понятное руководство по кнопкам
     executor.start_polling(dp, on_shutdown=shutdown)
 
-print('hello')
